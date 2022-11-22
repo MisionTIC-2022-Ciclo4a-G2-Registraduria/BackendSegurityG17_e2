@@ -1,53 +1,67 @@
-package com.misiontic.grupo17.securityBackend.controllers;
+package com.misiontic.grupo2.registraduria.controllers;
 
-import com.misiontic.grupo17.securityBackend.models.User;
-import com.misiontic.grupo17.securityBackend.services.UserServices;
+import com.misiontic.grupo2.registraduria.models.User;
+import com.misiontic.grupo2.registraduria.services.UserServices;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
+
 @CrossOrigin
 @RestController
 @RequestMapping("/user")
 public class UserController {
+
     @Autowired
     private UserServices userServices;
+
 
     @GetMapping("/all")
     public List<User> getAllUsers(){
         return this.userServices.index();
     }
 
-    @GetMapping("/{id}")
+
+    @GetMapping("/by_id/{id}")
     public Optional<User> getUserById(@PathVariable("id") int id){
         return this.userServices.show(id);
     }
 
+    @GetMapping("/by_email/{email}")
+    public Optional<User> getUserByEmail(@PathVariable("email") String email){
+        return this.userServices.showByEmail(email);
+    }
+
+    @GetMapping("/by_nickname/{nickname}")
+    public Optional<User> getUserByNickname (@PathVariable("nickname") String nickname){
+        return this.userServices.showByNickname(nickname);
+    }
+
     @PostMapping("/insert")
-    @ResponseStatus(HttpStatus.CREATED)
-    public User insertUser(@RequestBody User user){
+    public ResponseEntity<User> insertUser(@RequestBody User user){
         return this.userServices.create(user);
     }
 
+
     @PostMapping("/login")
-    @ResponseStatus(HttpStatus.ACCEPTED)
-    public HashMap<String, Object> loginUser(@RequestBody User user){
+    public User loginUser(@RequestBody User user){
         return this.userServices.login(user);
     }
 
+
     @PutMapping("/update/{id}")
-    @ResponseStatus(HttpStatus.CREATED)
-    public User updateUser(@PathVariable("id") int id, @RequestBody User user){
+    public ResponseEntity<User> updateUser(@PathVariable("id") int id, @RequestBody User user){
         return this.userServices.update(id, user);
     }
 
+
     @DeleteMapping("/delete/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public boolean deleteUser(@PathVariable("id") int id){
+    public ResponseEntity<Boolean> deleteUser (@PathVariable("id") int id){
         return this.userServices.delete(id);
     }
 }

@@ -1,4 +1,4 @@
-package com.misiontic.grupo17.securityBackend.models;
+package com.misiontic.grupo2.registraduria.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
@@ -13,8 +13,9 @@ public class Rol implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer idRol;
+    @Column(name= "name", nullable = false, unique = true, length = 50)
     private String name;
-    private String description;
+    private String description = "";
 
     @OneToMany(cascade = {CascadeType.PERSIST}, mappedBy = "rol")
     @JsonIgnoreProperties("rol")
@@ -22,17 +23,18 @@ public class Rol implements Serializable {
 
     @ManyToMany
     @JoinTable(
-            name = "permission_rol",
-            joinColumns = @JoinColumn(name = "idRol"),
+            name= "permissions_rol",
+            joinColumns = @JoinColumn(name= "idRol"),
             inverseJoinColumns = @JoinColumn(name = "idPermission")
     )
+    @JsonIgnoreProperties("roles")
     private Set<Permission> permissions;
 
-    public Integer getId() {
+    public Integer getIdRol() {
         return idRol;
     }
 
-    public void setId(Integer id) {
+    public void setIdRol(Integer id) {
         this.idRol = id;
     }
 

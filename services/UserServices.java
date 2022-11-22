@@ -1,10 +1,14 @@
-package com.misiontic.grupo17.securityBackend.services;
+package com.misiontic.grupo2.registraduria.services;
 
-import com.misiontic.grupo17.securityBackend.models.User;
-import com.misiontic.grupo17.securityBackend.repositories.UserRepository;
+import com.misiontic.grupo2.registraduria.models.User;
+import com.misiontic.grupo2.registraduria.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
+import javax.naming.ldap.HasControls;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
@@ -23,8 +27,8 @@ public class UserServices {
      *
      * @return
      */
-    public List<User> index() {
-        // TODO check class validations
+
+    public List<User> index(){
         return (List<User>) this.userRepository.findAll();
     }
 
@@ -33,8 +37,38 @@ public class UserServices {
      * @param id
      * @return
      */
-    public Optional<User> show(int id) {
-        return this.userRepository.findById(id);
+    public Optional<User> show(int id){
+        Optional<User> result = this.userRepository.findById(id);
+        if (result.isEmpty())
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "The requested user is does not exists.");
+        return result;
+    }
+
+    /**
+     *
+     * @param email
+     * @return
+     */
+    public Optional<User> showByEmail(String email){
+        Optional<User> result = this.userRepository.findByEmail(email);
+        if (result.isEmpty())
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "The requested user email does not exists.");
+        return result;
+    }
+
+    /**
+     *
+     * @param nickname
+     * @return
+     */
+    public Optional<User> showByNickname (String nickname){
+        Optional<User> result = this.userRepository.findByNickname(nickname);
+        if (result.isEmpty())
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "The requested user nickname does not exists.");
+        return result;
     }
 
     /**
@@ -42,21 +76,22 @@ public class UserServices {
      * @param newUser
      * @return
      */
-    public User create(User newUser) {
-        if (newUser.getId() == null) {
-            if ((newUser.getEmail() != null) && (newUser.getNickname() != null) && (newUser.getPassword() != null)){
-                newUser.setPassword(this.convertToSHA256(newUser.getPassword()));
-                return this.userRepository.save(newUser);
-            }
-            else {
-                // TODO agregar excepción de 400 Bad Request
-                return newUser;
-            }
+    public ResponseEntity<User> create(User newUser){
+        if (newUser.getId() != null){
+            Optional<User> tempUser = this.userRepository.findById(newUser.getId());
+            if (tempUser.isPresent())
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "ID is yet in the database");
         }
-        else {
-            // TODO validar si ID ya existe y manejar excepción
-            return newUser;
+        if ((newUser.getEmail() != null) && (newUser.getNickname() != null) &&
+           (newUser.getPassword() != null) && (newUser.getRol() != null)
+        ){
+            newUser.setPassword(this.convertToSHA256(newUser.getPassword()));
+            return new ResponseEntity<>(this.userRepository.save(newUser), HttpStatus.CREATED);
         }
+        else
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Mandatory fields had not been provided ");
     }
 
     /**
@@ -65,25 +100,26 @@ public class UserServices {
      * @param user
      * @return
      */
-    public User update(int id, User user) {
-        if (id > 0) {
+
+    public ResponseEntity<User> update(int id, User user){
+        if (id > 0){
             Optional<User> tempUser = this.userRepository.findById(id);
-            if (!tempUser.isEmpty()) {
+            if (tempUser.isPresent()){
                 if (user.getNickname() != null)
                     tempUser.get().setNickname(user.getNickname());
                 if (user.getPassword() != null)
                     tempUser.get().setPassword(this.convertToSHA256(user.getPassword()));
-                return this.userRepository.save(tempUser.get());
+                if (user.getRol() != null)
+                    tempUser.get().setRol(user.getRol());
+                return new ResponseEntity<>(this.userRepository.save(tempUser.get()), HttpStatus.CREATED);
             }
-            else {
-                // TODO error 404 not found
-                return user;
-            }
+            else
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "User id does not exist in database");
         }
-        else {
-            // TODO bad request 400 id < 0
-            return user;
-        }
+        else
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "User id cannot be negative");
     }
 
     /**
@@ -91,37 +127,43 @@ public class UserServices {
      * @param id
      * @return
      */
-    public boolean delete(int id){
+
+    public ResponseEntity<Boolean> delete(int id){
         Boolean success = this.show(id).map(user -> {
             this.userRepository.delete(user);
             return true;
         }).orElse(false);
-        return success;
+        if (success)
+            return new ResponseEntity<>(true, HttpStatus.NO_CONTENT);
+        else
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "User cannot be deleted ");
     }
-
 
     /**
      *
      * @param user
      * @return
      */
-    public HashMap<String, Object> login(User user){
-        HashMap<String, Object> result = new HashMap<>();
-        if(user.getPassword() != null && user.getEmail() != null) {
+    public User login(User user){
+        User result;
+        if (user.getPassword() != null && user.getEmail() != null) {
             String email = user.getEmail();
-            String password = this.convertToSHA256(user.getPassword());
+            String password =  this.convertToSHA256(user.getPassword());
             Optional<User> tempUser = this.userRepository.validateLogin(email, password);
             if (tempUser.isEmpty())
-                result.put("permission", false);
-            else {
-                result.put("permission", true);
-                result.put("nickname", tempUser.get().getNickname());
-            }
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
+                        "Invalid login");
+            else
+                result = tempUser.get();
         }
         else
-            result.put("permission", false);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Mandatory fields had not been provided");
         return result;
     }
+
+
 
     /**
      *
@@ -130,10 +172,10 @@ public class UserServices {
      */
     public String convertToSHA256(String password){
         MessageDigest md = null;
-        try {
+        try{
             md = MessageDigest.getInstance("SHA-256");
         }
-        catch (NoSuchAlgorithmException e){
+        catch(NoSuchAlgorithmException e){
             e.printStackTrace();
             return null;
         }
@@ -142,5 +184,7 @@ public class UserServices {
         for(byte b: hash)
             sb.append(String.format("%02x", b));
         return sb.toString();
+
+
     }
 }

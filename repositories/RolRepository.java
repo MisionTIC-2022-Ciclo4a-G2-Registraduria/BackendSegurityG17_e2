@@ -1,6 +1,6 @@
-package com.misiontic.grupo17.securityBackend.repositories;
+package com.misiontic.grupo2.registraduria.repositories;
 
-import com.misiontic.grupo17.securityBackend.models.Rol;
+import com.misiontic.grupo2.registraduria.models.Rol;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 

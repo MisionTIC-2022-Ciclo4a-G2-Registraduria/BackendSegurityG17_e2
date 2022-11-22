@@ -1,9 +1,11 @@
-package com.misiontic.grupo17.securityBackend.controllers;
+package com.misiontic.grupo2.registraduria.controllers;
 
-import com.misiontic.grupo17.securityBackend.models.Rol;
-import com.misiontic.grupo17.securityBackend.services.RolServices;
+import com.misiontic.grupo2.registraduria.models.Permission;
+import com.misiontic.grupo2.registraduria.models.Rol;
+import com.misiontic.grupo2.registraduria.services.RolServices;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -13,8 +15,10 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/rol")
 public class RolController {
+
     @Autowired
     private RolServices rolServices;
+
 
     @GetMapping("/all")
     public List<Rol> getAllRoles(){
@@ -22,25 +26,35 @@ public class RolController {
     }
 
     @GetMapping("/{id}")
-    public Optional<Rol> getRolById(@PathVariable("id") int id){
+    public Optional<Rol> getRolById (@PathVariable("id") int id){
         return this.rolServices.show(id);
     }
 
+    @GetMapping("/validate/{idRol}")
+    public ResponseEntity<Boolean> validate(@PathVariable("idRol")int idRol, @RequestBody Permission permission){
+        return this.rolServices.validateGrant(idRol, permission);
+    }
+
     @PostMapping("/insert")
-    @ResponseStatus(HttpStatus.CREATED)
-    public Rol insertRol(@RequestBody Rol rol){
+    public ResponseEntity<Rol> insertRol(@RequestBody Rol rol){
         return this.rolServices.create(rol);
     }
 
     @PutMapping("/update/{id}")
-    @ResponseStatus(HttpStatus.CREATED)
-    public Rol updateRol(@PathVariable("id") int id, @RequestBody Rol rol){
+    public ResponseEntity<Rol> updateRol(@PathVariable("id") int id, @RequestBody Rol rol){
         return this.rolServices.update(id, rol);
     }
 
+    @PutMapping("/update/{idRol}/add_permission/{idPermission}")
+    public ResponseEntity<Rol> updateRolAddPermission(@PathVariable("idRol") int idRol, @PathVariable("idPermission")int idPermission){
+        return this.rolServices.updateAddPermission(idRol, idPermission);
+    }
+
     @DeleteMapping("/delete/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public boolean deleteRol(@PathVariable("id") int id){
+    public ResponseEntity<Boolean> deleteRol (@PathVariable("id") int id){
         return this.rolServices.delete(id);
     }
+
+
+
 }

@@ -1,4 +1,4 @@
-package com.misiontic.grupo17.securityBackend.models;
+package com.misiontic.grupo2.registraduria.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
@@ -10,10 +10,16 @@ import java.io.Serializable;
 public class User implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+
     private Integer id;
-    // TODO improve fields
+
+    @Column(name= "nickname", nullable = false, unique = true, length = 50)
     private String nickname;
+
+    @Column(name= "email", nullable = false, unique = true, length = 100)
     private String email;
+
+    @Column(name= "password", nullable = false)
     private String password;
 
     @ManyToOne
@@ -21,12 +27,9 @@ public class User implements Serializable {
     @JsonIgnoreProperties("users")
     private Rol rol;
 
+
     public Integer getId() {
         return id;
-    }
-
-    public void setId(Integer id) {
-        this.id = id;
     }
 
     public String getNickname() {
